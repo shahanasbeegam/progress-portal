@@ -1,5 +1,5 @@
 import dotenv from 'dotenv'
-dotenv.config({ path: '.env.local' })
+dotenv.config({ path: '.env.local', quiet: true })
 import express from 'express'
 import { supabase } from './lib/supabase.js'
 import marksRouter from './routes/marks.js'
