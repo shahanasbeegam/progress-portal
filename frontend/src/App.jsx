@@ -3,15 +3,24 @@ import { useAuth } from './hooks/useAuth.js'
 import ProtectedRoute from './components/auth/ProtectedRoute.jsx'
 import Login from './pages/Login.jsx'
 import Unauthorized from './pages/Unauthorized.jsx'
+
 import TeacherDashboard from './pages/teacher/Dashboard.jsx'
 import MarkEntry from './pages/teacher/MarkEntry.jsx'
 import Summaries from './pages/teacher/Summaries.jsx'
+import TeacherVoiceNotes from './pages/teacher/VoiceNotes.jsx'
+import SentimentDashboard from './pages/teacher/SentimentDashboard.jsx'
+
 import ParentDashboard from './pages/parent/Dashboard.jsx'
+import ParentProgress from './pages/parent/Progress.jsx'
+import ParentCharts from './pages/parent/Charts.jsx'
+import ProgressCard from './pages/parent/ProgressCard.jsx'
+import ParentVoiceNotes from './pages/parent/VoiceNotes.jsx'
+
 import AdminDashboard from './pages/admin/Dashboard.jsx'
 import StudentDashboard from './pages/student/Dashboard.jsx'
 
-function TeacherGuard({ children }) {
-  return <ProtectedRoute allowedRoles={['teacher', 'admin']}>{children}</ProtectedRoute>
+function Guard({ roles, children }) {
+  return <ProtectedRoute allowedRoles={roles}>{children}</ProtectedRoute>
 }
 
 function RoleRedirect() {
@@ -30,28 +39,25 @@ export default function App() {
         <Route path="/unauthorized" element={<Unauthorized />} />
         <Route path="/" element={<RoleRedirect />} />
 
-        {/* Teacher routes */}
-        <Route path="/teacher" element={<TeacherGuard><TeacherDashboard /></TeacherGuard>} />
-        <Route path="/teacher/marks" element={<TeacherGuard><MarkEntry /></TeacherGuard>} />
-        <Route path="/teacher/summaries" element={<TeacherGuard><Summaries /></TeacherGuard>} />
+        {/* Teacher */}
+        <Route path="/teacher" element={<Guard roles={['teacher','admin']}><TeacherDashboard /></Guard>} />
+        <Route path="/teacher/marks" element={<Guard roles={['teacher','admin']}><MarkEntry /></Guard>} />
+        <Route path="/teacher/summaries" element={<Guard roles={['teacher','admin']}><Summaries /></Guard>} />
+        <Route path="/teacher/voice" element={<Guard roles={['teacher','admin']}><TeacherVoiceNotes /></Guard>} />
+        <Route path="/teacher/sentiment" element={<Guard roles={['teacher','admin']}><SentimentDashboard /></Guard>} />
 
-        {/* Parent routes */}
-        <Route
-          path="/parent/*"
-          element={<ProtectedRoute allowedRoles={['parent', 'admin']}><ParentDashboard /></ProtectedRoute>}
-        />
+        {/* Parent */}
+        <Route path="/parent" element={<Guard roles={['parent','admin']}><ParentDashboard /></Guard>} />
+        <Route path="/parent/progress" element={<Guard roles={['parent','admin']}><ParentProgress /></Guard>} />
+        <Route path="/parent/charts" element={<Guard roles={['parent','admin']}><ParentCharts /></Guard>} />
+        <Route path="/parent/progress-card" element={<Guard roles={['parent','admin']}><ProgressCard /></Guard>} />
+        <Route path="/parent/voice" element={<Guard roles={['parent','admin']}><ParentVoiceNotes /></Guard>} />
 
-        {/* Admin routes */}
-        <Route
-          path="/admin/*"
-          element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>}
-        />
+        {/* Admin */}
+        <Route path="/admin/*" element={<Guard roles={['admin']}><AdminDashboard /></Guard>} />
 
-        {/* Student routes */}
-        <Route
-          path="/student/*"
-          element={<ProtectedRoute allowedRoles={['student', 'admin']}><StudentDashboard /></ProtectedRoute>}
-        />
+        {/* Student */}
+        <Route path="/student/*" element={<Guard roles={['student','admin']}><StudentDashboard /></Guard>} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

@@ -75,4 +75,19 @@ router.post('/marks', async (req, res) => {
   }
 })
 
+// GET /api/parent/child — returns the student linked to the logged-in parent
+router.get('/parent/child', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('students')
+      .select('*, classes(name)')
+      .eq('parent_profile_id', req.user.id)
+      .maybeSingle()
+    if (error) throw error
+    res.json(data)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 export default router

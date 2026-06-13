@@ -7,12 +7,13 @@ const router = Router()
 // GET /api/summaries?approved=false
 router.get('/summaries', async (req, res) => {
   try {
-    const { approved } = req.query
+    const { approved, student_id } = req.query
     let query = supabase
       .from('ai_summaries')
       .select('*, students(full_name, class_id, classes(name))')
       .order('created_at', { ascending: false })
     if (approved !== undefined) query = query.eq('approved', approved === 'true')
+    if (student_id) query = query.eq('student_id', student_id)
     const { data, error } = await query
     if (error) throw error
     res.json(data)

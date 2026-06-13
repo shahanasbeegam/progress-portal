@@ -4,6 +4,8 @@ import express from 'express'
 import { supabase } from './lib/supabase.js'
 import marksRouter from './routes/marks.js'
 import summariesRouter from './routes/summaries.js'
+import progressCardRouter from './routes/progressCard.js'
+import voiceNotesRouter from './routes/voiceNotes.js'
 
 const app = express()
 app.use(express.json())
@@ -35,6 +37,8 @@ app.get('/api/me', authenticate, async (req, res) => {
 
 app.use('/api', authenticate, marksRouter)
 app.use('/api', authenticate, summariesRouter)
+app.use('/api', authenticate, progressCardRouter)
+app.use('/api', authenticate, voiceNotesRouter)
 
 // Local dev server
 if (process.env.NODE_ENV !== 'production') {
