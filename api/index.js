@@ -19,7 +19,14 @@ async function authenticate(req, res, next) {
   next()
 }
 
-app.get('/api/health', (_req, res) => res.json({ ok: true }))
+app.get('/api/health', (_req, res) => res.json({
+  ok: true,
+  env: {
+    hasSupabaseUrl: !!process.env.SUPABASE_URL,
+    hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+    hasAnthropicKey: !!process.env.ANTHROPIC_API_KEY,
+  },
+}))
 
 app.get('/api/me', authenticate, async (req, res) => {
   try {
