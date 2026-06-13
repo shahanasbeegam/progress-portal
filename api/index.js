@@ -1,4 +1,5 @@
-import 'dotenv/config'
+import dotenv from 'dotenv'
+dotenv.config({ path: '.env.local' })
 import express from 'express'
 import { supabase } from './lib/supabase.js'
 import marksRouter from './routes/marks.js'
@@ -34,5 +35,10 @@ app.get('/api/me', authenticate, async (req, res) => {
 
 app.use('/api', authenticate, marksRouter)
 app.use('/api', authenticate, summariesRouter)
+
+// Local dev server
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(3001, () => console.log('API running on http://localhost:3001'))
+}
 
 export default app
