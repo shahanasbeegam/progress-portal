@@ -1,13 +1,22 @@
 import { createClient } from '@supabase/supabase-js'
 
-const url = process.env.SUPABASE_URL
-const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+let _client = null
 
-if (!url || !key) {
-  console.error('[supabase] Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY env vars')
+function getClient() {
+  if (!_client) {
+    const url = process.env.SUPABASE_URL
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!url || !key) {
+      throw new Error(`Missing env vars: SUPABASE_URL=${url ? 'ok' : 'MISSING'}, SUPABASE_SERVICE_ROLE_KEY=${key ? 'ok' : 'MISSING'}`)
+    }
+    _client = createClient(url, key)
+  }
+  return _client
 }
 
-export const supabase = createClient(
-  url ?? 'https://placeholder.supabase.co',
-  key ?? 'placeholder-key',
-)
+// Proxy so callers can still use `supabase.from(...)` etc.
+export const supabase = new Proxy({}, {
+  get(_, prop) {
+    return (...args) => getClient()[prop](...args)
+  },
+})
