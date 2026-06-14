@@ -1,14 +1,13 @@
 import express from 'express'
 import { createClient } from '@supabase/supabase-js'
-import marksRouter from '../src/routes/marks.js'
-import summariesRouter from '../src/routes/summaries.js'
-import progressCardRouter from '../src/routes/progressCard.js'
-import voiceNotesRouter from '../src/routes/voiceNotes.js'
+import marksRouter from './_routes/marks.js'
+import summariesRouter from './_routes/summaries.js'
+import progressCardRouter from './_routes/progressCard.js'
+import voiceNotesRouter from './_routes/voiceNotes.js'
 
 const app = express()
 app.use(express.json())
 
-// JWT auth middleware — runs before all /api protected routes
 async function auth(req, res, next) {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '')
