@@ -18,7 +18,7 @@ router.get('/classes', async (req, res) => {
 router.get('/students', async (req, res) => {
   try {
     const { class_id } = req.query
-    let query = supabase.from('students').select('id, full_name, roll_number, class_id').order('full_name')
+    let query = supabase.from('students').select('id, full_name, roll_number, class_id, parent_profile_id').order('full_name')
     if (class_id) query = query.eq('class_id', class_id)
     const { data, error } = await query
     if (error) throw error
