@@ -22,13 +22,22 @@ export default function SummaryCard({ summary, showApprove, onApprove, onEdit })
           <p className="font-semibold text-gray-800">{studentName}</p>
           <p className="text-xs text-gray-500">{className} · {summary.term}</p>
         </div>
-        <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-          summary.approved
-            ? 'bg-green-100 text-green-700'
-            : 'bg-yellow-100 text-yellow-700'
-        }`}>
-          {summary.approved ? 'Approved' : 'Pending'}
-        </span>
+        <div className="flex flex-col items-end gap-1">
+          <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+            summary.approved ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+          }`}>
+            {summary.approved ? 'Approved' : 'Pending'}
+          </span>
+          {summary.acknowledged_at ? (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 font-medium" title={`Seen on ${new Date(summary.acknowledged_at).toLocaleString('en-IN')}`}>
+              ✅ Parent seen
+            </span>
+          ) : summary.approved ? (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-400">
+              ⏳ Awaiting parent
+            </span>
+          ) : null}
+        </div>
       </div>
 
       {editing ? (

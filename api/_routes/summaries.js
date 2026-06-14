@@ -101,6 +101,23 @@ router.put('/summaries/:id/approve', async (req, res) => {
   }
 })
 
+// PUT /api/summaries/:id/acknowledge — parent marks as seen
+router.put('/summaries/:id/acknowledge', async (req, res) => {
+  try {
+    const { id } = req.params
+    const { data, error } = await supabase
+      .from('ai_summaries')
+      .update({ acknowledged_at: new Date().toISOString(), acknowledged_by: req.user.id })
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    res.json(data)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // PUT /api/summaries/:id  — edit summary text before approving
 router.put('/summaries/:id', async (req, res) => {
   try {

@@ -95,6 +95,34 @@ router.get('/voice-notes/signed-url/:id', async (req, res) => {
   }
 })
 
+// POST /api/text-feedback — typed message, auto-analyse sentiment with Claude
+router.post('/text-feedback', async (req, res) => {
+  try {
+    const { recipient_id, class_id, transcript } = req.body
+    if (!transcript) return res.status(400).json({ error: 'transcript required' })
+
+    // Sentiment with Claude
+    let sentiment = null
+    try {
+      const msg = await anthropic.messages.create({
+        model: 'claude-sonnet-4-6', max_tokens: 20,
+        messages: [{ role: 'user', content: `Classify the sentiment of this message as exactly one word: positive, negative, or neutral.\n\n"${transcript}"` }],
+      })
+      sentiment = msg.content[0].text.trim().toLowerCase().replace(/[^a-z]/g, '')
+    } catch (_) {}
+
+    const { data, error } = await supabase.from('voice_notes').insert({
+      sender_id: req.user.id, recipient_id, class_id,
+      transcript, sentiment, type: 'text',
+      storage_path: null, duration_secs: null,
+    }).select().single()
+    if (error) throw error
+    res.json(data)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // GET /api/admin/sentiment — all sentiment records for admin (service role bypasses RLS)
 router.get('/admin/sentiment', async (req, res) => {
   try {
