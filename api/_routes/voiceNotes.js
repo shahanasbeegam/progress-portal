@@ -2,7 +2,6 @@ import { Router } from 'express'
 import { supabase } from '../_lib/supabase.js'
 import { anthropic } from '../_lib/anthropic.js'
 import { getGroq } from '../_lib/groq.js'
-import { toFile } from 'groq-sdk'
 
 const router = Router()
 
@@ -54,7 +53,7 @@ router.post('/voice-notes/:id/transcribe', async (req, res) => {
       if (dErr) throw dErr
 
       const arrayBuffer = await fileBlob.arrayBuffer()
-      const audioFile = await toFile(Buffer.from(arrayBuffer), 'audio.webm', { type: 'audio/webm' })
+      const audioFile = new File([Buffer.from(arrayBuffer)], 'audio.webm', { type: 'audio/webm' })
 
       const groq = getGroq()
       const result = await groq.audio.transcriptions.create({
