@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth.js'
 import ProtectedRoute from './components/auth/ProtectedRoute.jsx'
+import Landing from './pages/Landing.jsx'
 import Login from './pages/Login.jsx'
 import Unauthorized from './pages/Unauthorized.jsx'
 
@@ -35,9 +36,10 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
-        <Route path="/" element={<RoleRedirect />} />
+        <Route path="/home" element={<RoleRedirect />} />
 
         {/* Teacher */}
         <Route path="/teacher" element={<Guard roles={['teacher','admin']}><TeacherDashboard /></Guard>} />
