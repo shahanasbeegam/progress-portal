@@ -9,14 +9,6 @@ const ROLE_REDIRECTS = {
   student: '/student',
 }
 
-const DEMO_ACCOUNTS = [
-  { role: 'Admin', email: 'admin@school.com', color: 'bg-violet-50 border-violet-200 hover:border-violet-400', dot: 'bg-violet-500', text: 'text-violet-700' },
-  { role: 'Teacher (8A)', email: 'teacher801@school.com', color: 'bg-blue-50 border-blue-200 hover:border-blue-400', dot: 'bg-blue-500', text: 'text-blue-700' },
-  { role: 'Teacher (9A)', email: 'teacher901@school.com', color: 'bg-blue-50 border-blue-200 hover:border-blue-400', dot: 'bg-blue-500', text: 'text-blue-700' },
-  { role: 'Teacher (10A)', email: 'teacher1001@school.com', color: 'bg-blue-50 border-blue-200 hover:border-blue-400', dot: 'bg-blue-500', text: 'text-blue-700' },
-  { role: 'Parent (Class 8)', email: 'parent801@school.com', color: 'bg-emerald-50 border-emerald-200 hover:border-emerald-400', dot: 'bg-emerald-500', text: 'text-emerald-700' },
-  { role: 'Parent (Class 9)', email: 'parent901@school.com', color: 'bg-emerald-50 border-emerald-200 hover:border-emerald-400', dot: 'bg-emerald-500', text: 'text-emerald-700' },
-]
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -38,12 +30,6 @@ export default function Login() {
     } finally {
       setLoading(false)
     }
-  }
-
-  function fillDemo(demoEmail) {
-    setEmail(demoEmail)
-    setPassword('School@1234')
-    setError('')
   }
 
   if (profile) {
@@ -159,25 +145,6 @@ export default function Login() {
                 ) : 'Sign in →'}
               </button>
             </form>
-          </div>
-
-          {/* Demo accounts */}
-          <div className="bg-white/10 backdrop-blur border border-white/20 rounded-2xl p-5">
-            <p className="text-xs font-semibold text-white/60 uppercase tracking-wide mb-3">
-              Demo accounts · password: <span className="font-mono bg-white/10 px-1.5 py-0.5 rounded text-white/80">School@1234</span>
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {DEMO_ACCOUNTS.map((a) => (
-                <button key={a.email} onClick={() => fillDemo(a.email)}
-                  className={`flex items-center gap-2.5 border rounded-xl px-3 py-2.5 text-left transition-all bg-white ${a.color}`}>
-                  <span className={`w-2 h-2 rounded-full shrink-0 ${a.dot}`} />
-                  <div className="min-w-0">
-                    <p className={`text-xs font-semibold ${a.text}`}>{a.role}</p>
-                    <p className="text-xs text-gray-400 truncate">{a.email}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
           </div>
 
           <p className="text-center text-xs text-white/40">
