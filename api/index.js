@@ -1,4 +1,5 @@
 import express from 'express'
+import { authMiddleware } from '../src/lib/auth.js'
 import marksRouter from '../src/routes/marks.js'
 import summariesRouter from '../src/routes/summaries.js'
 import progressCardRouter from '../src/routes/progressCard.js'
@@ -19,10 +20,10 @@ app.get('/api/health', (_req, res) => {
   })
 })
 
-app.use('/api', marksRouter)
-app.use('/api', summariesRouter)
-app.use('/api', progressCardRouter)
-app.use('/api', voiceNotesRouter)
+app.use('/api', authMiddleware, marksRouter)
+app.use('/api', authMiddleware, summariesRouter)
+app.use('/api', authMiddleware, progressCardRouter)
+app.use('/api', authMiddleware, voiceNotesRouter)
 
 app.use((_req, res) => res.status(404).json({ error: 'Not found' }))
 
