@@ -2,124 +2,135 @@ import { Link } from 'react-router-dom'
 
 const FEATURES = [
   {
-    icon: '📊',
-    title: 'Real-Time Progress Tracking',
-    desc: 'Teachers enter marks for every subject and exam. Parents instantly see their child\'s performance across Q1, Q2, and Annual exams.',
+    icon: '📝',
+    title: 'Mark Entry by Teachers',
+    desc: 'Class teachers enter subject-wise marks for Q1, Q2, and Annual exams. All 5 CBSE subjects tracked in one place.',
   },
   {
     icon: '🤖',
-    title: 'AI-Generated Summaries',
-    desc: 'Claude AI analyses marks and writes personalised progress summaries for each student. Teachers review and approve before parents see them.',
+    title: 'AI Progress Summaries',
+    desc: 'Claude AI reads the marks and writes a plain-English progress report for each student. Teacher reviews it before sending to parents.',
   },
   {
     icon: '🎙️',
-    title: 'Voice & Text Messaging',
-    desc: 'Teachers and parents can exchange voice notes or typed messages directly. No need for phone calls or physical diary entries.',
+    title: 'Voice & Text Messages',
+    desc: 'Teachers send voice notes or typed messages to parents. Parents reply the same way — no apps to install, no phone tag.',
   },
   {
     icon: '😊',
     title: 'Sentiment Analysis',
-    desc: 'Every message is automatically analysed for tone — positive, neutral, or negative — giving the school a real-time pulse on parent engagement.',
+    desc: 'Every message is automatically labelled positive, neutral, or negative. Admin gets a school-wide view of parent-teacher tone.',
   },
   {
     icon: '✅',
     title: 'Parent Acknowledgement',
-    desc: 'Parents digitally confirm they have reviewed the progress report. Teachers see who has acknowledged and who hasn\'t.',
+    desc: 'After reading the AI summary, parents tap "I have seen this report." Teachers see a confirmed badge — no more uncertainty.',
   },
   {
     icon: '📄',
-    title: 'Digitally Signed PDF Cards',
-    desc: 'Download a cryptographically signed PDF progress card — a tamper-proof record for every student, every term.',
+    title: 'Signed PDF Progress Cards',
+    desc: 'Parents download a digitally signed PDF of their child\'s report card — tamper-proof, shareable, and always available.',
   },
-]
-
-const HOW_IT_WORKS = [
-  { role: 'Teacher', color: 'bg-blue-50 border-blue-200', badge: 'bg-blue-100 text-blue-700', steps: ['Enter marks for each student', 'Generate AI progress summary', 'Approve and send to parents', 'Exchange voice or text messages'] },
-  { role: 'Parent', color: 'bg-green-50 border-green-200', badge: 'bg-green-100 text-green-700', steps: ['View child\'s progress report', 'Read AI-written summary', 'Acknowledge you have seen it', 'Send message to teacher'] },
-  { role: 'Admin', color: 'bg-purple-50 border-purple-200', badge: 'bg-purple-100 text-purple-700', steps: ['Manage classes and users', 'Monitor all communications', 'View school-wide sentiment', 'Track parent engagement'] },
 ]
 
 export default function Landing() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white font-sans">
+
       {/* Navbar */}
-      <nav className="border-b border-gray-100 px-6 py-4 flex items-center justify-between max-w-6xl mx-auto">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-            <span className="text-white text-sm font-bold">E</span>
+      <nav className="border-b border-gray-100 px-6 py-4">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
+              <span className="text-white text-sm font-bold">E</span>
+            </div>
+            <span className="text-xl font-bold text-gray-900">EduBridge</span>
           </div>
-          <span className="text-xl font-bold text-gray-900">EduBridge</span>
+          <Link to="/login"
+            className="bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors">
+            Sign In
+          </Link>
         </div>
-        <Link to="/login"
-          className="bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors">
-          Sign In
-        </Link>
       </nav>
 
       {/* Hero */}
-      <section className="max-w-4xl mx-auto px-6 py-20 text-center">
-        <span className="inline-block bg-primary-50 text-primary-700 text-xs font-semibold px-3 py-1 rounded-full mb-6 tracking-wide uppercase">
-          AI-Powered · CBSE Schools
-        </span>
-        <h1 className="text-5xl font-extrabold text-gray-900 leading-tight mb-6">
-          Bridging Parents &<br />Teachers with AI
-        </h1>
-        <p className="text-lg text-gray-500 max-w-2xl mx-auto mb-10 leading-relaxed">
-          EduBridge is a modern parent-teacher communication portal built for CBSE schools.
-          Track student progress, exchange messages, and get AI-generated insights — all in one place.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+      <section className="bg-gradient-to-b from-primary-50 to-white py-20 px-6 text-center">
+        <div className="max-w-3xl mx-auto">
+          <span className="inline-block bg-primary-100 text-primary-700 text-xs font-semibold px-3 py-1 rounded-full mb-5 tracking-wide uppercase">
+            For CBSE Schools · Classes 8, 9 & 10
+          </span>
+          <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 leading-tight mb-5">
+            A smarter way for<br />
+            <span className="text-primary-600">parents and teachers</span><br />
+            to stay connected
+          </h1>
+          <p className="text-gray-600 text-lg leading-relaxed mb-3">
+            EduBridge is a school communication portal where teachers share student progress,
+            parents receive AI-written summaries, and both sides exchange voice or text messages —
+            all in one secure platform.
+          </p>
+          <p className="text-gray-400 text-sm mb-10">
+            No more physical diaries. No missed calls. No guesswork about how your child is doing.
+          </p>
           <Link to="/login"
-            className="bg-primary-600 hover:bg-primary-700 text-white font-semibold px-8 py-3 rounded-xl transition-colors text-sm">
-            Get Started →
+            className="inline-block bg-primary-600 hover:bg-primary-700 text-white font-semibold px-8 py-3 rounded-xl transition-colors text-sm">
+            Sign In to Your School Portal →
           </Link>
-          <a href="#features"
-            className="border border-gray-300 hover:border-gray-400 text-gray-700 font-medium px-8 py-3 rounded-xl transition-colors text-sm">
-            See Features
-          </a>
-        </div>
-
-        {/* Stats */}
-        <div className="mt-16 grid grid-cols-3 gap-8 max-w-lg mx-auto">
-          {[['3', 'Classes'], ['90+', 'Students'], ['AI', 'Powered']].map(([val, label]) => (
-            <div key={label} className="text-center">
-              <p className="text-3xl font-bold text-primary-600">{val}</p>
-              <p className="text-sm text-gray-400 mt-1">{label}</p>
-            </div>
-          ))}
         </div>
       </section>
 
-      {/* Features */}
-      <section id="features" className="bg-gray-50 py-20">
-        <div className="max-w-5xl mx-auto px-6">
-          <h2 className="text-3xl font-bold text-gray-900 text-center mb-3">Everything your school needs</h2>
-          <p className="text-gray-500 text-center mb-12">Built for Indian CBSE schools. Designed for simplicity.</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {FEATURES.map((f) => (
-              <div key={f.title} className="bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-md transition-shadow">
-                <div className="text-3xl mb-4">{f.icon}</div>
-                <h3 className="font-semibold text-gray-800 mb-2">{f.title}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">{f.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* How it works */}
-      <section className="py-20 max-w-5xl mx-auto px-6">
-        <h2 className="text-3xl font-bold text-gray-900 text-center mb-3">How it works</h2>
-        <p className="text-gray-500 text-center mb-12">Three roles. One seamless experience.</p>
+      {/* Who is this for */}
+      <section className="py-16 px-6 max-w-5xl mx-auto">
+        <h2 className="text-2xl font-bold text-gray-900 text-center mb-10">Who uses EduBridge?</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {HOW_IT_WORKS.map((r) => (
+          {[
+            {
+              emoji: '👨‍🏫',
+              role: 'Class Teachers',
+              color: 'border-blue-200 bg-blue-50',
+              badge: 'bg-blue-100 text-blue-700',
+              points: [
+                'Enter marks for all subjects and exams',
+                'Generate AI-written progress summaries',
+                'Approve and publish reports to parents',
+                'Send voice notes or messages to parents',
+                'See which parents have acknowledged',
+              ],
+            },
+            {
+              emoji: '👨‍👩‍👦',
+              role: 'Parents',
+              color: 'border-green-200 bg-green-50',
+              badge: 'bg-green-100 text-green-700',
+              points: [
+                'View your child\'s marks for every subject',
+                'Read AI-generated progress summary',
+                'Download a signed PDF progress card',
+                'Send voice or typed messages to teacher',
+                'Acknowledge you have seen the report',
+              ],
+            },
+            {
+              emoji: '🏫',
+              role: 'School Admin',
+              color: 'border-purple-200 bg-purple-50',
+              badge: 'bg-purple-100 text-purple-700',
+              points: [
+                'Manage classes, teachers, and students',
+                'Monitor all parent-teacher messages',
+                'View school-wide sentiment overview',
+                'Track parent engagement at a glance',
+                'Ensure no student is left unreviewed',
+              ],
+            },
+          ].map((r) => (
             <div key={r.role} className={`rounded-2xl border ${r.color} p-6`}>
+              <div className="text-3xl mb-2">{r.emoji}</div>
               <span className={`inline-block text-xs font-bold px-3 py-1 rounded-full mb-4 ${r.badge}`}>{r.role}</span>
-              <ul className="space-y-3">
-                {r.steps.map((s, i) => (
+              <ul className="space-y-2">
+                {r.points.map((p, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                    <span className="mt-0.5 w-5 h-5 rounded-full bg-white border border-gray-300 flex items-center justify-center text-xs font-bold text-gray-500 shrink-0">{i + 1}</span>
-                    {s}
+                    <span className="text-primary-500 mt-0.5 shrink-0">✓</span>{p}
                   </li>
                 ))}
               </ul>
@@ -128,26 +139,67 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Problem → Solution */}
+      <section className="bg-gray-50 py-16 px-6">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-2xl font-bold text-gray-900 text-center mb-10">The problem we solve</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {[
+              { problem: 'Parents don\'t know how their child is performing until report day', solution: 'Live marks visible anytime, per subject and per exam' },
+              { problem: 'Progress reports are hard to understand for non-academic parents', solution: 'Claude AI rewrites marks into simple plain-English summaries' },
+              { problem: 'Teacher-parent communication relies on physical diaries or calls', solution: 'Voice notes and typed messages exchanged digitally, instantly' },
+              { problem: 'Schools don\'t know if parents actually read the progress report', solution: 'One-tap acknowledgement — teacher sees who has confirmed' },
+            ].map((item, i) => (
+              <div key={i} className="bg-white rounded-xl border border-gray-200 p-5">
+                <p className="text-sm text-red-600 mb-3">❌ {item.problem}</p>
+                <p className="text-sm text-green-700 font-medium">✅ {item.solution}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Features */}
+      <section className="py-16 px-6">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-2xl font-bold text-gray-900 text-center mb-3">What's inside</h2>
+          <p className="text-gray-500 text-center text-sm mb-10">Every feature your school needs, nothing it doesn't.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {FEATURES.map((f) => (
+              <div key={f.title} className="bg-white rounded-2xl border border-gray-200 p-5 hover:shadow-md transition-shadow">
+                <div className="text-2xl mb-3">{f.icon}</div>
+                <h3 className="font-semibold text-gray-800 text-sm mb-1">{f.title}</h3>
+                <p className="text-xs text-gray-500 leading-relaxed">{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* CTA */}
-      <section className="bg-primary-600 py-16 text-center px-6">
-        <h2 className="text-3xl font-bold text-white mb-4">Ready to connect your school?</h2>
-        <p className="text-primary-100 mb-8 max-w-xl mx-auto">Sign in with your school credentials to access your personalised dashboard.</p>
+      <section className="bg-primary-600 py-16 px-6 text-center">
+        <h2 className="text-2xl font-bold text-white mb-3">Your school is already set up</h2>
+        <p className="text-primary-100 text-sm mb-8 max-w-md mx-auto">
+          Sign in with the credentials provided by your school administrator.
+          Teachers, parents, and admin each have their own personalised dashboard.
+        </p>
         <Link to="/login"
-          className="bg-white text-primary-600 hover:bg-primary-50 font-semibold px-8 py-3 rounded-xl transition-colors text-sm inline-block">
+          className="inline-block bg-white text-primary-600 hover:bg-primary-50 font-semibold px-8 py-3 rounded-xl transition-colors text-sm">
           Sign In to EduBridge →
         </Link>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-gray-100 py-8 text-center text-sm text-gray-400">
+      <footer className="border-t border-gray-100 py-8 px-6 text-center">
         <div className="flex items-center justify-center gap-2 mb-2">
           <div className="w-5 h-5 bg-primary-600 rounded flex items-center justify-center">
             <span className="text-white text-xs font-bold">E</span>
           </div>
-          <span className="font-semibold text-gray-600">EduBridge</span>
+          <span className="font-semibold text-gray-700 text-sm">EduBridge</span>
         </div>
-        <p>AI-powered parent-teacher communication for CBSE schools · Built with Claude AI</p>
+        <p className="text-xs text-gray-400">AI-powered parent-teacher communication for CBSE schools · Powered by Claude AI</p>
       </footer>
+
     </div>
   )
 }
