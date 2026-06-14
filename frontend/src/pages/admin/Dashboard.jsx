@@ -3,6 +3,7 @@ import { Link, Routes, Route, useNavigate } from 'react-router-dom'
 import Navbar from '../../components/layout/Navbar.jsx'
 import { useAuth } from '../../hooks/useAuth.js'
 import { supabase } from '../../lib/supabase.js'
+import { api } from '../../lib/api.js'
 
 export default function AdminDashboard() {
   return (
@@ -125,10 +126,9 @@ function AdminSentiment() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.from('voice_notes').select('sentiment, transcript, created_at, sender:sender_id(full_name)')
-      .not('sentiment', 'is', null)
-      .order('created_at', { ascending: false })
-      .then(({ data }) => setNotes(data ?? []))
+    api.get('/admin/sentiment')
+      .then((data) => setNotes(data ?? []))
+      .catch(() => setNotes([]))
       .finally(() => setLoading(false))
   }, [])
 

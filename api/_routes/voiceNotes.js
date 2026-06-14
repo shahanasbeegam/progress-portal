@@ -95,6 +95,21 @@ router.get('/voice-notes/signed-url/:id', async (req, res) => {
   }
 })
 
+// GET /api/admin/sentiment — all sentiment records for admin (service role bypasses RLS)
+router.get('/admin/sentiment', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('voice_notes')
+      .select('sentiment, transcript, created_at, sender:sender_id(full_name)')
+      .not('sentiment', 'is', null)
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    res.json(data)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // GET /api/sentiment — aggregate sentiment for teacher dashboard
 router.get('/sentiment', async (req, res) => {
   try {
