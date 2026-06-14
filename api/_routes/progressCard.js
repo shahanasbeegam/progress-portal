@@ -11,10 +11,14 @@ router.post('/progress-card/generate', async (req, res) => {
     if (!student_id || !term) return res.status(400).json({ error: 'student_id and term required' })
 
     const [{ data: student }, { data: marks }, { data: summary }] = await Promise.all([
-      supabase.from('students').select('full_name, classes(name)').eq('id', student_id).single(),
+      supabase.from('students').select('full_name, class_id').eq('id', student_id).single(),
       supabase.from('marks').select('score, max_score, exam_type, subjects(name)').eq('student_id', student_id),
       supabase.from('ai_summaries').select('summary_text').eq('student_id', student_id).eq('term', term).eq('approved', true).maybeSingle(),
     ])
+    if (student?.class_id) {
+      const { data: cls } = await supabase.from('classes').select('name').eq('id', student.class_id).maybeSingle()
+      student.classes = cls
+    }
 
     const pdfDoc = await PDFDocument.create()
     const page = pdfDoc.addPage([595, 842])

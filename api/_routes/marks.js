@@ -80,10 +80,14 @@ router.get('/parent/child', async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('students')
-      .select('*, classes(name)')
+      .select('*')
       .eq('parent_profile_id', req.user.id)
       .maybeSingle()
     if (error) throw error
+    if (data) {
+      const { data: cls } = await supabase.from('classes').select('name').eq('id', data.class_id).maybeSingle()
+      data.classes = cls
+    }
     res.json(data)
   } catch (err) {
     res.status(500).json({ error: err.message })

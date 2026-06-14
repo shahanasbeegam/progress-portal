@@ -10,7 +10,7 @@ router.get('/summaries', async (req, res) => {
     const { approved, student_id } = req.query
     let query = supabase
       .from('ai_summaries')
-      .select('*, students(full_name, class_id, classes(name))')
+      .select('*, students(full_name, class_id)')
       .order('created_at', { ascending: false })
     if (approved !== undefined) query = query.eq('approved', approved === 'true')
     if (student_id) query = query.eq('student_id', student_id)
@@ -28,13 +28,21 @@ router.post('/summaries/generate', async (req, res) => {
     const { student_id, term } = req.body
     if (!student_id || !term) return res.status(400).json({ error: 'student_id and term required' })
 
-    // Fetch student + class info
+    // Fetch student info
     const { data: student, error: sErr } = await supabase
       .from('students')
-      .select('full_name, class_id, classes(name)')
+      .select('full_name, class_id')
       .eq('id', student_id)
       .single()
     if (sErr) throw sErr
+
+    // Fetch class name separately
+    const { data: classRow } = await supabase
+      .from('classes')
+      .select('name')
+      .eq('id', student.class_id)
+      .maybeSingle()
+    student.className = classRow?.name ?? ''
 
     // Fetch marks for this student
     const { data: marks, error: mErr } = await supabase
@@ -54,7 +62,7 @@ router.post('/summaries/generate', async (req, res) => {
 
     const summaryText = await generateProgressSummary({
       studentName: student.full_name,
-      className: student.classes?.name ?? '',
+      className: student.className,
       term,
       marks: formattedMarks,
     })
