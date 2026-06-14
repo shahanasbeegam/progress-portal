@@ -13,6 +13,7 @@ export default function VoicePlayer({ noteId, duration, transcript, sentiment, o
   const [transcribing, setTranscribing] = useState(false)
   const [localTranscript, setLocalTranscript] = useState(transcript)
   const [localSentiment, setLocalSentiment] = useState(sentiment)
+  const [transcribeError, setTranscribeError] = useState('')
 
   async function load() {
     if (url) return
@@ -35,7 +36,7 @@ export default function VoicePlayer({ noteId, duration, transcript, sentiment, o
       setLocalSentiment(updated.sentiment)
       onTranscribed?.(updated)
     } catch (e) {
-      console.error(e)
+      setTranscribeError(e.message)
     } finally {
       setTranscribing(false)
     }
@@ -52,6 +53,7 @@ export default function VoicePlayer({ noteId, duration, transcript, sentiment, o
         <audio controls src={url} className="w-full h-8 mt-1" />
       )}
 
+      {transcribeError && <p className="text-xs text-red-600">{transcribeError}</p>}
       {!localTranscript && (
         <button onClick={handleTranscribe} disabled={transcribing}
           className="text-xs text-indigo-600 hover:underline disabled:opacity-50 block">
