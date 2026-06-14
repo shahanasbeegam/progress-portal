@@ -19,10 +19,24 @@ export default function ParentVoiceNotes() {
 
   async function load() {
     try {
-      const [n] = await Promise.all([api.get('/voice-notes')])
+      const [n, child] = await Promise.all([api.get('/voice-notes'), api.get('/parent/child')])
       setNotes(n)
-      const received = n.find((note) => note.sender?.role === 'teacher')
-      if (received) setTeacher({ id: received.sender_id, name: received.sender?.full_name })
+
+      // First try to find teacher from received messages
+      const fromTeacher = n.find((note) => note.sender?.role === 'teacher')
+      if (fromTeacher) {
+        setTeacher({ id: fromTeacher.sender_id, name: fromTeacher.sender?.full_name })
+        return
+      }
+
+      // Otherwise look up teacher via child's class subjects
+      if (child?.class_id) {
+        const subjects = await api.get(`/subjects?class_id=${child.class_id}`)
+        if (subjects?.length) {
+          const teacherProfile = await api.get(`/profile/${subjects[0].teacher_id}`)
+          if (teacherProfile) setTeacher({ id: subjects[0].teacher_id, name: teacherProfile.full_name })
+        }
+      }
     } catch (e) {
       setError(e.message)
     } finally {
@@ -43,26 +57,33 @@ export default function ParentVoiceNotes() {
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Messages</h2>
         {error && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-4">{error}</p>}
 
-        {teacher && (
-          <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6 space-y-4">
-            <h3 className="font-semibold text-gray-800">Message to {teacher.name}</h3>
-            <div className="flex gap-2 border-b border-gray-100 pb-3">
-              <button onClick={() => setInputMode('voice')}
-                className={`text-sm px-3 py-1 rounded-full transition-colors ${inputMode === 'voice' ? 'bg-gray-800 text-white' : 'text-gray-500 hover:text-gray-700'}`}>
-                🎙 Voice
-              </button>
-              <button onClick={() => setInputMode('text')}
-                className={`text-sm px-3 py-1 rounded-full transition-colors ${inputMode === 'text' ? 'bg-gray-800 text-white' : 'text-gray-500 hover:text-gray-700'}`}>
-                ✏️ Type
-              </button>
-            </div>
-            {inputMode === 'voice' ? (
-              <VoiceRecorder recipientId={teacher.id} onSent={addNote} />
-            ) : (
-              <TextFeedback recipientId={teacher.id} onSent={addNote} />
-            )}
-          </div>
-        )}
+        <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6 space-y-4">
+          <h3 className="font-semibold text-gray-800">
+            {teacher ? `Send Message to ${teacher.name}` : 'Send Message to Class Teacher'}
+          </h3>
+          {!teacher && !loading && (
+            <p className="text-sm text-gray-400">No teacher found for your child's class.</p>
+          )}
+          {teacher && (
+            <>
+              <div className="flex gap-2 border-b border-gray-100 pb-3">
+                <button onClick={() => setInputMode('voice')}
+                  className={`text-sm px-3 py-1 rounded-full transition-colors ${inputMode === 'voice' ? 'bg-gray-800 text-white' : 'text-gray-500 hover:text-gray-700'}`}>
+                  🎙 Voice
+                </button>
+                <button onClick={() => setInputMode('text')}
+                  className={`text-sm px-3 py-1 rounded-full transition-colors ${inputMode === 'text' ? 'bg-gray-800 text-white' : 'text-gray-500 hover:text-gray-700'}`}>
+                  ✏️ Type
+                </button>
+              </div>
+              {inputMode === 'voice' ? (
+                <VoiceRecorder recipientId={teacher.id} onSent={addNote} />
+              ) : (
+                <TextFeedback recipientId={teacher.id} onSent={addNote} />
+              )}
+            </>
+          )}
+        </div>
 
         <Section title="Received" notes={received} loading={loading} emptyMsg="No messages received yet." />
         <Section title="Sent" notes={sent} loading={false} emptyMsg="No messages sent yet." />
