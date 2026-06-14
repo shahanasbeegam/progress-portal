@@ -141,10 +141,11 @@ router.get('/admin/sentiment', async (req, res) => {
 // GET /api/sentiment — aggregate sentiment for teacher dashboard
 router.get('/sentiment', async (req, res) => {
   try {
+    const uid = req.user.id
     const { data, error } = await supabase
       .from('voice_notes')
-      .select('sentiment, created_at, transcript, recipient:recipient_id(full_name)')
-      .eq('recipient_id', req.user.id)
+      .select('sentiment, created_at, transcript, sender:sender_id(full_name), recipient:recipient_id(full_name)')
+      .or(`sender_id.eq.${uid},recipient_id.eq.${uid}`)
       .not('sentiment', 'is', null)
       .order('created_at', { ascending: false })
     if (error) throw error
