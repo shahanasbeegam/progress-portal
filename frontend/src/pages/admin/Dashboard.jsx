@@ -124,11 +124,12 @@ function AdminClasses() {
 function AdminSentiment() {
   const [notes, setNotes] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     api.get('/admin/sentiment')
       .then((data) => setNotes(data ?? []))
-      .catch(() => setNotes([]))
+      .catch((e) => setError(e.message))
       .finally(() => setLoading(false))
   }, [])
 
@@ -138,6 +139,7 @@ function AdminSentiment() {
     <main className="max-w-4xl mx-auto px-4 py-8">
       <Link to="/admin" className="text-sm text-primary-600 hover:underline mb-4 inline-block">← Back</Link>
       <h2 className="text-2xl font-bold text-gray-900 mb-6">Sentiment Overview</h2>
+      {error && <p className="text-red-600 text-sm mb-4">{error}</p>}
       {loading ? <Spinner /> : (
         <>
           <div className="grid grid-cols-3 gap-4 mb-6">
