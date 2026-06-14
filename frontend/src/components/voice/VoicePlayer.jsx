@@ -57,7 +57,7 @@ export default function VoicePlayer({ noteId, duration, transcript, sentiment, o
       {!localTranscript && (
         <button onClick={handleTranscribe} disabled={transcribing}
           className="text-xs text-indigo-600 hover:underline disabled:opacity-50 block">
-          {transcribing ? 'Analysing sentiment…' : '🎙 Analyse Sentiment'}
+          {transcribing ? 'Transcribing…' : '🎙 Transcribe & Analyse Sentiment'}
         </button>
       )}
 

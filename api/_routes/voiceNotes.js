@@ -1,6 +1,8 @@
 import { Router } from 'express'
 import { supabase } from '../_lib/supabase.js'
 import { anthropic } from '../_lib/anthropic.js'
+import { getGroq } from '../_lib/groq.js'
+import { toFile } from 'groq-sdk'
 
 const router = Router()
 
@@ -35,16 +37,35 @@ router.post('/voice-notes', async (req, res) => {
   }
 })
 
-// POST /api/voice-notes/:id/transcribe — Claude sentiment on existing transcript
+// POST /api/voice-notes/:id/transcribe — Groq Whisper transcription + Claude sentiment
 router.post('/voice-notes/:id/transcribe', async (req, res) => {
   try {
     const { id } = req.params
     const { data: note, error: nErr } = await supabase
-      .from('voice_notes').select('transcript').eq('id', id).single()
+      .from('voice_notes').select('storage_path, transcript').eq('id', id).single()
     if (nErr) throw nErr
 
-    const transcript = note.transcript
-    if (!transcript) return res.status(400).json({ error: 'No transcript available for this note' })
+    let transcript = note.transcript
+
+    // If no transcript yet, download audio and transcribe with Groq Whisper
+    if (!transcript) {
+      const { data: fileBlob, error: dErr } = await supabase.storage
+        .from('voice-notes').download(note.storage_path)
+      if (dErr) throw dErr
+
+      const arrayBuffer = await fileBlob.arrayBuffer()
+      const audioFile = await toFile(Buffer.from(arrayBuffer), 'audio.webm', { type: 'audio/webm' })
+
+      const groq = getGroq()
+      const result = await groq.audio.transcriptions.create({
+        file: audioFile,
+        model: 'whisper-large-v3',
+        response_format: 'text',
+      })
+      transcript = typeof result === 'string' ? result : result.text
+    }
+
+    if (!transcript) return res.status(400).json({ error: 'Could not transcribe audio' })
 
     // Sentiment with Claude
     const msg = await anthropic.messages.create({
@@ -54,7 +75,7 @@ router.post('/voice-notes/:id/transcribe', async (req, res) => {
     const sentiment = msg.content[0].text.trim().toLowerCase().replace(/[^a-z]/g, '')
 
     const { data, error } = await supabase
-      .from('voice_notes').update({ sentiment }).eq('id', id).select().single()
+      .from('voice_notes').update({ transcript, sentiment }).eq('id', id).select().single()
     if (error) throw error
     res.json(data)
   } catch (err) {
