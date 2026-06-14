@@ -14,9 +14,11 @@ function getClient() {
   return _client
 }
 
-// Proxy so callers can still use `supabase.from(...)` etc.
+// Proxy that handles both methods (.from, .rpc) and properties (.storage, .auth)
 export const supabase = new Proxy({}, {
   get(_, prop) {
-    return (...args) => getClient()[prop](...args)
+    const client = getClient()
+    const value = client[prop]
+    return typeof value === 'function' ? value.bind(client) : value
   },
 })
