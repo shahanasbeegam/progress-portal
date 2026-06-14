@@ -30,6 +30,7 @@ app.get('/api/health', (_req, res) => {
       hasSupabaseUrl: !!process.env.SUPABASE_URL,
       hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
       hasAnthropicKey: !!process.env.ANTHROPIC_API_KEY,
+      hasGroqKey: !!process.env.GROQ_API_KEY,
     },
   })
 })
