@@ -1,10 +1,8 @@
 import { Router } from 'express'
 import { supabase } from '../_lib/supabase.js'
 import { anthropic } from '../_lib/anthropic.js'
-import OpenAI from 'openai'
 
 const router = Router()
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
 // GET /api/voice-notes
 router.get('/voice-notes', async (req, res) => {
@@ -24,11 +22,11 @@ router.get('/voice-notes', async (req, res) => {
 // POST /api/voice-notes — create record after frontend uploads to storage
 router.post('/voice-notes', async (req, res) => {
   try {
-    const { storage_path, recipient_id, class_id, duration_secs } = req.body
+    const { storage_path, recipient_id, class_id, duration_secs, transcript } = req.body
     if (!storage_path) return res.status(400).json({ error: 'storage_path required' })
 
     const { data, error } = await supabase.from('voice_notes').insert({
-      sender_id: req.user.id, recipient_id, class_id, storage_path, duration_secs,
+      sender_id: req.user.id, recipient_id, class_id, storage_path, duration_secs, transcript,
     }).select().single()
     if (error) throw error
     res.json(data)
@@ -37,22 +35,16 @@ router.post('/voice-notes', async (req, res) => {
   }
 })
 
-// POST /api/voice-notes/:id/transcribe — Whisper + Claude sentiment
+// POST /api/voice-notes/:id/transcribe — Claude sentiment on existing transcript
 router.post('/voice-notes/:id/transcribe', async (req, res) => {
   try {
     const { id } = req.params
-    const { data: note, error: nErr } = await supabase.from('voice_notes').select('storage_path').eq('id', id).single()
+    const { data: note, error: nErr } = await supabase
+      .from('voice_notes').select('transcript').eq('id', id).single()
     if (nErr) throw nErr
 
-    // Download audio from Supabase Storage
-    const { data: file, error: dErr } = await supabase.storage.from('voice-notes').download(note.storage_path)
-    if (dErr) throw dErr
-
-    // Transcribe with Whisper
-    const arrayBuffer = await file.arrayBuffer()
-    const audioFile = new File([arrayBuffer], 'audio.webm', { type: 'audio/webm' })
-    const transcription = await openai.audio.transcriptions.create({ file: audioFile, model: 'whisper-1' })
-    const transcript = transcription.text
+    const transcript = note.transcript
+    if (!transcript) return res.status(400).json({ error: 'No transcript available for this note' })
 
     // Sentiment with Claude
     const msg = await anthropic.messages.create({
@@ -61,8 +53,8 @@ router.post('/voice-notes/:id/transcribe', async (req, res) => {
     })
     const sentiment = msg.content[0].text.trim().toLowerCase().replace(/[^a-z]/g, '')
 
-    // Update record
-    const { data, error } = await supabase.from('voice_notes').update({ transcript, sentiment }).eq('id', id).select().single()
+    const { data, error } = await supabase
+      .from('voice_notes').update({ sentiment }).eq('id', id).select().single()
     if (error) throw error
     res.json(data)
   } catch (err) {
