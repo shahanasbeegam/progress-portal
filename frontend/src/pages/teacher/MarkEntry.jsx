@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import Navbar from '../../components/layout/Navbar.jsx'
 import StudentMarkForm from '../../components/teacher/StudentMarkForm.jsx'
 import { api } from '../../lib/api.js'
@@ -10,9 +10,8 @@ export default function MarkEntry() {
   const [subjects, setSubjects] = useState([])
   const [selectedClass, setSelectedClass] = useState('')
   const [selectedStudent, setSelectedStudent] = useState('')
-  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const navigate = useNavigate()
+  const [saved, setSaved] = useState(false)
 
   useEffect(() => {
     api.get('/classes').then(setClasses).catch((e) => setError(e.message))
@@ -23,6 +22,7 @@ export default function MarkEntry() {
     setSelectedStudent('')
     setStudents([])
     setSubjects([])
+    setSaved(false)
     if (!classId) return
     try {
       const [s, sub] = await Promise.all([
@@ -36,63 +36,93 @@ export default function MarkEntry() {
     }
   }
 
+  const selectedStudentName = students.find((s) => s.id === selectedStudent)?.full_name
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       <main className="max-w-3xl mx-auto px-4 py-8">
-        <button onClick={() => navigate('/teacher')} className="text-sm text-primary-600 hover:underline mb-4 inline-block">
-          ← Back to dashboard
-        </button>
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Enter Marks</h2>
 
-        {error && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-4">{error}</p>}
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-2 text-sm text-gray-400 mb-6">
+          <Link to="/teacher" className="hover:text-primary-600 transition-colors">Dashboard</Link>
+          <span>›</span>
+          <span className="text-gray-600 font-medium">Mark Entry</span>
+        </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6 space-y-4">
+        <div className="flex items-center gap-3 mb-8">
+          <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-xl">📝</div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Class</label>
+            <h1 className="text-2xl font-bold text-gray-900">Enter Marks</h1>
+            <p className="text-sm text-gray-400">Select a class and student to enter marks</p>
+          </div>
+        </div>
+
+        {error && (
+          <div className="bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl px-4 py-3 mb-5 flex items-center gap-2">
+            <span>⚠️</span> {error}
+          </div>
+        )}
+        {saved && (
+          <div className="bg-emerald-50 border border-emerald-100 text-emerald-700 text-sm rounded-xl px-4 py-3 mb-5 flex items-center gap-2">
+            <span>✅</span> Marks saved successfully.
+          </div>
+        )}
+
+        {/* Selectors */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6 space-y-5">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Select Class</label>
             <select
               value={selectedClass}
               onChange={(e) => handleClassChange(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent transition"
             >
-              <option value="">Select a class</option>
-              {classes.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
+              <option value="">— Choose a class —</option>
+              {classes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
 
           {students.length > 0 && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Student</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Select Student</label>
               <select
                 value={selectedStudent}
-                onChange={(e) => setSelectedStudent(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                onChange={(e) => { setSelectedStudent(e.target.value); setSaved(false) }}
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent transition"
               >
-                <option value="">Select a student</option>
-                {students.map((s) => (
-                  <option key={s.id} value={s.id}>{s.full_name}</option>
-                ))}
+                <option value="">— Choose a student —</option>
+                {students.map((s) => <option key={s.id} value={s.id}>{s.full_name} ({s.roll_number})</option>)}
               </select>
             </div>
           )}
+
+          {selectedClass && students.length === 0 && (
+            <p className="text-sm text-gray-400 text-center py-2">No students found in this class.</p>
+          )}
         </div>
 
+        {/* Mark Form */}
         {selectedStudent && subjects.length > 0 && (
-          <StudentMarkForm
-            studentId={selectedStudent}
-            subjects={subjects}
-            onSaved={() => setError('')}
-            onError={setError}
-          />
-        )}
-
-        {selectedClass && students.length === 0 && !loading && (
-          <p className="text-sm text-gray-500">No students found in this class.</p>
-        )}
-        {selectedClass && subjects.length === 0 && !loading && (
-          <p className="text-sm text-gray-500">No subjects found for this class.</p>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <div className="flex items-center gap-2 mb-5 pb-4 border-b border-gray-100">
+              <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center">
+                <span className="text-primary-700 text-xs font-bold">
+                  {selectedStudentName?.split(' ').map((n) => n[0]).join('').slice(0, 2)}
+                </span>
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900 text-sm">{selectedStudentName}</p>
+                <p className="text-xs text-gray-400">{subjects.length} subjects</p>
+              </div>
+            </div>
+            <StudentMarkForm
+              studentId={selectedStudent}
+              subjects={subjects}
+              onSaved={() => { setError(''); setSaved(true) }}
+              onError={setError}
+            />
+          </div>
         )}
       </main>
     </div>
