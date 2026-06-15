@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import Navbar from '../../components/layout/Navbar.jsx'
+import Sidebar from '../../components/layout/Sidebar.jsx'
 import { api } from '../../lib/api.js'
 import { supabase } from '../../lib/supabase.js'
 
@@ -43,9 +43,8 @@ export default function ProgressCard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      <main className="max-w-xl mx-auto px-4 py-8">
+    <Sidebar>
+      <div className="px-6 py-8 max-w-xl mx-auto">
         <Link to="/parent" className="text-sm text-primary-600 hover:underline mb-4 inline-block">← Back</Link>
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Download Progress Card</h2>
 
@@ -82,7 +81,7 @@ export default function ProgressCard() {
             PDF includes an HMAC-SHA256 digital signature for authenticity verification.
           </p>
         </div>
-      </main>
-    </div>
+      </div>
+    </Sidebar>
   )
 }

@@ -4,6 +4,7 @@ import marksRouter from './_routes/marks.js'
 import summariesRouter from './_routes/summaries.js'
 import progressCardRouter from './_routes/progressCard.js'
 import voiceNotesRouter from './_routes/voiceNotes.js'
+import aiFeaturesRouter from './_routes/aiFeatures.js'
 
 const app = express()
 app.use(express.json())
@@ -39,6 +40,7 @@ app.use('/api', auth, marksRouter)
 app.use('/api', auth, summariesRouter)
 app.use('/api', auth, progressCardRouter)
 app.use('/api', auth, voiceNotesRouter)
+app.use('/api', auth, aiFeaturesRouter)
 
 app.use((_req, res) => res.status(404).json({ error: 'Not found' }))
 

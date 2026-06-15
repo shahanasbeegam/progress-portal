@@ -25,7 +25,7 @@ router.get('/summaries', async (req, res) => {
 // POST /api/summaries/generate
 router.post('/summaries/generate', async (req, res) => {
   try {
-    const { student_id, term } = req.body
+    const { student_id, term, tone } = req.body
     if (!student_id || !term) return res.status(400).json({ error: 'student_id and term required' })
 
     // Fetch student info
@@ -65,6 +65,7 @@ router.post('/summaries/generate', async (req, res) => {
       className: student.className,
       term,
       marks: formattedMarks,
+      tone: tone || 'warm',
     })
 
     // Save to DB (upsert by student + term)

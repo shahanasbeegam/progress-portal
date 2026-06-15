@@ -45,12 +45,13 @@ router.get('/subjects', async (req, res) => {
 // GET /api/marks?student_id=
 router.get('/marks', async (req, res) => {
   try {
-    const { student_id } = req.query
+    const { student_id, class_id } = req.query
     let query = supabase
       .from('marks')
-      .select('*, subjects(name)')
+      .select('*, subjects(name), students!inner(class_id)')
       .order('entered_at', { ascending: false })
     if (student_id) query = query.eq('student_id', student_id)
+    if (class_id) query = query.eq('students.class_id', class_id)
     const { data, error } = await query
     if (error) throw error
     res.json(data)

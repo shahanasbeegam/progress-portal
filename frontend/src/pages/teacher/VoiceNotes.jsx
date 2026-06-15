@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import Navbar from '../../components/layout/Navbar.jsx'
+import Sidebar from '../../components/layout/Sidebar.jsx'
 import VoiceRecorder from '../../components/voice/VoiceRecorder.jsx'
 import VoicePlayer from '../../components/voice/VoicePlayer.jsx'
 import TextFeedback from '../../components/voice/TextFeedback.jsx'
 import { api } from '../../lib/api.js'
 import { useAuth } from '../../hooks/useAuth.js'
+import toast from 'react-hot-toast'
 
 export default function TeacherVoiceNotes() {
   const [notes, setNotes] = useState([])
@@ -33,7 +34,10 @@ export default function TeacherVoiceNotes() {
     } catch (e) { console.error(e) }
   }
 
-  function addNote(n) { setNotes((prev) => [n, ...prev]) }
+  function addNote(n) {
+    setNotes((prev) => [n, ...prev])
+    toast.success('Message sent!')
+  }
 
   const recipientId = recipientType === 'individual' ? selectedRecipient : null
   const classId = recipientType === 'class' ? selectedClass : null
@@ -42,9 +46,8 @@ export default function TeacherVoiceNotes() {
   const received = notes.filter((n) => n.recipient_id === profile?.id)
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      <main className="max-w-2xl mx-auto px-4 py-8">
+    <Sidebar>
+      <div className="px-6 py-8 max-w-2xl mx-auto">
         <Link to="/teacher" className="text-sm text-primary-600 hover:underline mb-4 inline-block">← Back</Link>
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Messages</h2>
 
@@ -96,8 +99,8 @@ export default function TeacherVoiceNotes() {
 
         <NoteList title="Sent" notes={sent} loading={loading} />
         <NoteList title="Received from Parents" notes={received} loading={false} />
-      </main>
-    </div>
+      </div>
+    </Sidebar>
   )
 }
 

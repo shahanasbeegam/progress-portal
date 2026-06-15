@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Navbar from '../../components/layout/Navbar.jsx'
+import Sidebar from '../../components/layout/Sidebar.jsx'
 import SummaryCard from '../../components/teacher/SummaryCard.jsx'
 import { api } from '../../lib/api.js'
+import toast from 'react-hot-toast'
 
 export default function Summaries() {
   const [summaries, setSummaries] = useState([])
   const [tab, setTab] = useState('pending')
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
   const [generating, setGenerating] = useState(false)
   const [classes, setClasses] = useState([])
   const [students, setStudents] = useState([])
@@ -16,6 +16,8 @@ export default function Summaries() {
   const [selectedStudent, setSelectedStudent] = useState('')
   const [term, setTerm] = useState('Term 1')
   const [showForm, setShowForm] = useState(false)
+  const [tone, setTone] = useState('warm')
+  const [bulkGenerating, setBulkGenerating] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => { fetchSummaries() }, [tab])
@@ -42,27 +44,45 @@ export default function Summaries() {
   }
 
   async function handleGenerate() {
-    if (!selectedStudent || !term) return setError('Select a student and term')
+    if (!selectedStudent || !term) return toast.error('Select a student and term')
     setGenerating(true)
-    setError('')
     try {
-      const saved = await api.post('/summaries/generate', { student_id: selectedStudent, term })
+      const saved = await api.post('/summaries/generate', { student_id: selectedStudent, term, tone })
       setTab('pending')
       setSummaries((prev) => [saved, ...prev.filter((s) => s.id !== saved.id)])
       setShowForm(false)
+      toast.success('AI Summary generated!')
     } catch (e) {
-      setError(e.message)
+      toast.error(e.message)
     } finally {
       setGenerating(false)
     }
+  }
+
+  async function handleBulkGenerate() {
+    if (!selectedClass || !term) return toast.error('Select a class and term')
+    setBulkGenerating(true)
+    const studentList = students.length ? students : await api.get(`/students?class_id=${selectedClass}`)
+    let count = 0
+    for (const s of studentList) {
+      try {
+        await api.post('/summaries/generate', { student_id: s.id, term, tone })
+        count++
+      } catch { /* skip failures */ }
+    }
+    setBulkGenerating(false)
+    setTab('pending')
+    await fetchSummaries()
+    toast.success(`Generated ${count} summaries!`)
   }
 
   async function handleApprove(id) {
     try {
       await api.put(`/summaries/${id}/approve`)
       setSummaries((prev) => prev.filter((s) => s.id !== id))
+      toast.success('Summary approved — parent can now see it')
     } catch (e) {
-      setError(e.message)
+      toast.error(e.message)
     }
   }
 
@@ -71,14 +91,13 @@ export default function Summaries() {
       const updated = await api.put(`/summaries/${id}`, { summary_text: text })
       setSummaries((prev) => prev.map((s) => (s.id === id ? { ...s, summary_text: updated.summary_text } : s)))
     } catch (e) {
-      setError(e.message)
+      toast.error(e.message)
     }
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      <main className="max-w-3xl mx-auto px-4 py-8">
+    <Sidebar>
+      <div className="px-6 py-8 max-w-3xl mx-auto">
         <button onClick={() => navigate('/teacher')} className="text-sm text-primary-600 hover:underline mb-4 inline-block">
           ← Back to dashboard
         </button>
@@ -91,8 +110,6 @@ export default function Summaries() {
             {showForm ? 'Cancel' : '+ Generate Summary'}
           </button>
         </div>
-
-        {error && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-4">{error}</p>}
 
         {showForm && (
           <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6 space-y-3">
@@ -115,13 +132,34 @@ export default function Summaries() {
                 <option key={t}>{t}</option>
               ))}
             </select>
-            <button
-              onClick={handleGenerate}
-              disabled={generating || !selectedStudent}
-              className="w-full py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors"
-            >
-              {generating ? 'Generating with Claude AI…' : 'Generate Summary'}
-            </button>
+            <div>
+              <p className="text-xs text-gray-500 mb-1.5">Comment Tone</p>
+              <div className="flex gap-2">
+                {['warm', 'formal', 'concise'].map(t => (
+                  <button key={t} type="button" onClick={() => setTone(t)}
+                    className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${tone === t ? 'bg-primary-600 text-white border-primary-600' : 'border-gray-300 text-gray-600 hover:border-primary-400'}`}>
+                    {t.charAt(0).toUpperCase() + t.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleGenerate}
+                disabled={generating || !selectedStudent}
+                className="flex-1 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors"
+              >
+                {generating ? 'Generating…' : 'Generate for Student'}
+              </button>
+              <button
+                onClick={handleBulkGenerate}
+                disabled={bulkGenerating || !selectedClass}
+                title="Generate for all students in selected class"
+                className="px-3 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+              >
+                {bulkGenerating ? '…' : 'All'}
+              </button>
+            </div>
           </div>
         )}
 
@@ -155,7 +193,7 @@ export default function Summaries() {
             ))}
           </div>
         )}
-      </main>
-    </div>
+      </div>
+    </Sidebar>
   )
 }

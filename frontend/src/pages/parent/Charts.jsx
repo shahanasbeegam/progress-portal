@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import Navbar from '../../components/layout/Navbar.jsx'
+import Sidebar from '../../components/layout/Sidebar.jsx'
 import SubjectBar from '../../components/charts/SubjectBar.jsx'
 import SubjectRadar from '../../components/charts/SubjectRadar.jsx'
 import ScoreLine from '../../components/charts/ScoreLine.jsx'
@@ -31,9 +31,8 @@ export default function ParentCharts() {
   if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600" /></div>
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      <main className="max-w-4xl mx-auto px-4 py-8">
+    <Sidebar>
+      <div className="px-6 py-8 max-w-4xl mx-auto">
         <Link to="/parent" className="text-sm text-primary-600 hover:underline mb-4 inline-block">← Back</Link>
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Performance Charts</h2>
 
@@ -51,7 +50,7 @@ export default function ParentCharts() {
             <ScoreHeatmap marks={marks} />
           </div>
         )}
-      </main>
-    </div>
+      </div>
+    </Sidebar>
   )
 }

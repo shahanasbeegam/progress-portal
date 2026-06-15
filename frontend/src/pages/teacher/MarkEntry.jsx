@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import Navbar from '../../components/layout/Navbar.jsx'
+import toast from 'react-hot-toast'
+import Sidebar from '../../components/layout/Sidebar.jsx'
 import StudentMarkForm from '../../components/teacher/StudentMarkForm.jsx'
 import { api } from '../../lib/api.js'
 
@@ -10,11 +11,9 @@ export default function MarkEntry() {
   const [subjects, setSubjects] = useState([])
   const [selectedClass, setSelectedClass] = useState('')
   const [selectedStudent, setSelectedStudent] = useState('')
-  const [error, setError] = useState('')
-  const [saved, setSaved] = useState(false)
 
   useEffect(() => {
-    api.get('/classes').then(setClasses).catch((e) => setError(e.message))
+    api.get('/classes').then(setClasses).catch((e) => toast.error(e.message))
   }, [])
 
   async function handleClassChange(classId) {
@@ -22,7 +21,6 @@ export default function MarkEntry() {
     setSelectedStudent('')
     setStudents([])
     setSubjects([])
-    setSaved(false)
     if (!classId) return
     try {
       const [s, sub] = await Promise.all([
@@ -32,16 +30,15 @@ export default function MarkEntry() {
       setStudents(s)
       setSubjects(sub)
     } catch (e) {
-      setError(e.message)
+      toast.error(e.message)
     }
   }
 
   const selectedStudentName = students.find((s) => s.id === selectedStudent)?.full_name
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      <main className="max-w-3xl mx-auto px-4 py-8">
+    <Sidebar>
+      <div className="px-6 py-8 max-w-3xl mx-auto">
 
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-gray-400 mb-6">
@@ -57,17 +54,6 @@ export default function MarkEntry() {
             <p className="text-sm text-gray-400">Select a class and student to enter marks</p>
           </div>
         </div>
-
-        {error && (
-          <div className="bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl px-4 py-3 mb-5 flex items-center gap-2">
-            <span>⚠️</span> {error}
-          </div>
-        )}
-        {saved && (
-          <div className="bg-emerald-50 border border-emerald-100 text-emerald-700 text-sm rounded-xl px-4 py-3 mb-5 flex items-center gap-2">
-            <span>✅</span> Marks saved successfully.
-          </div>
-        )}
 
         {/* Selectors */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6 space-y-5">
@@ -88,7 +74,7 @@ export default function MarkEntry() {
               <label className="block text-sm font-semibold text-gray-700 mb-2">Select Student</label>
               <select
                 value={selectedStudent}
-                onChange={(e) => { setSelectedStudent(e.target.value); setSaved(false) }}
+                onChange={(e) => setSelectedStudent(e.target.value)}
                 className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent transition"
               >
                 <option value="">— Choose a student —</option>
@@ -119,12 +105,12 @@ export default function MarkEntry() {
             <StudentMarkForm
               studentId={selectedStudent}
               subjects={subjects}
-              onSaved={() => { setError(''); setSaved(true) }}
-              onError={setError}
+              onSaved={() => toast.success('Marks saved successfully!')}
+              onError={(e) => toast.error(e)}
             />
           </div>
         )}
-      </main>
-    </div>
+      </div>
+    </Sidebar>
   )
 }

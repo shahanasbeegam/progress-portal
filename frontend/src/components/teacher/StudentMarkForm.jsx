@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { api } from '../../lib/api.js'
 
 const EXAM_TYPES = ['unit_test', 'midterm', 'final', 'assignment']
@@ -11,6 +11,9 @@ export default function StudentMarkForm({ studentId, subjects, onSaved, onError 
     exam_type: 'midterm',
     score: '',
     max_score: '100',
+    feedback: '',
+    suggestions: [],
+    loadingSuggestions: false,
   }))
 
   const [rows, setRows] = useState(initialRows)
@@ -22,6 +25,26 @@ export default function StudentMarkForm({ studentId, subjects, onSaved, onError 
 
   function updateRow(index, field, value) {
     setRows((prev) => prev.map((r, i) => i === index ? { ...r, [field]: value } : r))
+  }
+
+  async function fetchSuggestions(index, row) {
+    const score = parseFloat(row.score)
+    const max = parseFloat(row.max_score)
+    if (!row.score || isNaN(score) || isNaN(max) || max <= 0) return
+    const pct = (score / max) * 100
+    if (pct >= 65) {
+      setRows(prev => prev.map((r, i) => i === index ? { ...r, suggestions: [] } : r))
+      return
+    }
+    setRows(prev => prev.map((r, i) => i === index ? { ...r, loadingSuggestions: true, suggestions: [] } : r))
+    try {
+      const { suggestions } = await api.post('/feedback-suggestions', {
+        subject: row.subjectName, score, max_score: max,
+      })
+      setRows(prev => prev.map((r, i) => i === index ? { ...r, suggestions: suggestions ?? [], loadingSuggestions: false } : r))
+    } catch {
+      setRows(prev => prev.map((r, i) => i === index ? { ...r, loadingSuggestions: false } : r))
+    }
   }
 
   async function handleSave() {
@@ -71,50 +94,75 @@ export default function StudentMarkForm({ studentId, subjects, onSaved, onError 
           </select>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-gray-500 border-b">
-                <th className="pb-2 font-medium">Subject</th>
-                <th className="pb-2 font-medium">Exam Type</th>
-                <th className="pb-2 font-medium">Score</th>
-                <th className="pb-2 font-medium">Max</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {rows.map((row, i) => (
-                <tr key={row.subject_id}>
-                  <td className="py-2 pr-3 font-medium text-gray-700">{row.subjectName}</td>
-                  <td className="py-2 pr-3">
-                    <select
-                      value={row.exam_type}
-                      onChange={(e) => updateRow(i, 'exam_type', e.target.value)}
-                      className="border border-gray-300 rounded px-2 py-1 text-xs"
-                    >
-                      {EXAM_TYPES.map((t) => <option key={t}>{t}</option>)}
-                    </select>
-                  </td>
-                  <td className="py-2 pr-3">
-                    <input
-                      type="number" min="0" max={row.max_score}
-                      value={row.score}
-                      onChange={(e) => updateRow(i, 'score', e.target.value)}
-                      placeholder="—"
-                      className="w-20 border border-gray-300 rounded px-2 py-1 text-sm"
-                    />
-                  </td>
-                  <td className="py-2">
-                    <input
-                      type="number" min="1"
-                      value={row.max_score}
-                      onChange={(e) => updateRow(i, 'max_score', e.target.value)}
-                      className="w-20 border border-gray-300 rounded px-2 py-1 text-sm"
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="space-y-3">
+          {rows.map((row, i) => (
+            <div key={row.subject_id} className="border border-gray-100 rounded-lg p-3 bg-gray-50/50">
+              <div className="flex flex-wrap gap-3 items-center">
+                <span className="font-medium text-gray-700 w-28 shrink-0">{row.subjectName}</span>
+                <select
+                  value={row.exam_type}
+                  onChange={(e) => updateRow(i, 'exam_type', e.target.value)}
+                  className="border border-gray-300 rounded px-2 py-1 text-xs bg-white"
+                >
+                  {EXAM_TYPES.map((t) => <option key={t}>{t}</option>)}
+                </select>
+                <input
+                  type="number" min="0" max={row.max_score}
+                  value={row.score}
+                  onChange={(e) => updateRow(i, 'score', e.target.value)}
+                  onBlur={() => fetchSuggestions(i, row)}
+                  placeholder="Score"
+                  className="w-20 border border-gray-300 rounded px-2 py-1 text-sm bg-white"
+                />
+                <span className="text-gray-400 text-sm">/</span>
+                <input
+                  type="number" min="1"
+                  value={row.max_score}
+                  onChange={(e) => updateRow(i, 'max_score', e.target.value)}
+                  className="w-20 border border-gray-300 rounded px-2 py-1 text-sm bg-white"
+                />
+                {row.score && row.max_score && (
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${(row.score/row.max_score)*100 >= 65 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
+                    {Math.round((parseFloat(row.score)/parseFloat(row.max_score))*100)}%
+                  </span>
+                )}
+              </div>
+
+              {/* Feedback suggestions */}
+              {row.loadingSuggestions && (
+                <p className="text-xs text-amber-600 mt-2 flex items-center gap-1"><span className="animate-spin inline-block">⟳</span> Getting AI suggestions…</p>
+              )}
+              {row.suggestions.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  <p className="text-xs text-gray-400 font-medium">AI Feedback Suggestions — click to use:</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {row.suggestions.map((s, si) => (
+                      <button
+                        key={si}
+                        type="button"
+                        onClick={() => {
+                          updateRow(i, 'feedback', s)
+                          updateRow(i, 'suggestions', [])
+                        }}
+                        className="text-xs bg-amber-50 border border-amber-200 text-amber-800 rounded-lg px-2.5 py-1 hover:bg-amber-100 transition-colors text-left max-w-xs"
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {(row.feedback || row.suggestions.length > 0 || ((row.score && (row.score/row.max_score)*100 < 65))) && (
+                <textarea
+                  value={row.feedback}
+                  onChange={(e) => updateRow(i, 'feedback', e.target.value)}
+                  placeholder="Feedback for parent (optional)"
+                  rows={2}
+                  className="mt-2 w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700 bg-white resize-none"
+                />
+              )}
+            </div>
+          ))}
         </div>
 
         <button

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, Routes, Route } from 'react-router-dom'
-import Navbar from '../../components/layout/Navbar.jsx'
+import Sidebar from '../../components/layout/Sidebar.jsx'
 import { useAuth } from '../../hooks/useAuth.js'
 import { supabase } from '../../lib/supabase.js'
 import { api } from '../../lib/api.js'
@@ -13,15 +13,12 @@ const ROLE_COLOR = {
 }
 
 function Spinner() {
-  return <div className="flex justify-center py-16"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" /></div>
+  return <div className="flex justify-center py-16"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500" /></div>
 }
 
-function PageHeader({ title, subtitle, back }) {
+function PageTitle({ title, subtitle }) {
   return (
     <div className="mb-8">
-      <Link to={back ?? '/admin'} className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-primary-600 transition-colors mb-4">
-        ‹ Back
-      </Link>
       <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
       {subtitle && <p className="text-sm text-gray-400 mt-1">{subtitle}</p>}
     </div>
@@ -30,50 +27,151 @@ function PageHeader({ title, subtitle, back }) {
 
 export default function AdminDashboard() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
+    <Sidebar>
       <Routes>
         <Route index element={<AdminHome />} />
         <Route path="users" element={<AdminUsers />} />
         <Route path="classes" element={<AdminClasses />} />
         <Route path="sentiment" element={<AdminSentiment />} />
       </Routes>
-    </div>
+    </Sidebar>
   )
 }
 
 function AdminHome() {
   const { profile } = useAuth()
+  const [stats, setStats] = useState({ teachers: 0, parents: 0, students: 0, admins: 0 })
+  const [loading, setLoading] = useState(true)
+  const [termSummary, setTermSummary] = useState(null)
+  const [generatingSummary, setGeneratingSummary] = useState(false)
+  const [summaryModal, setSummaryModal] = useState(false)
+
+  useEffect(() => {
+    supabase.from('profiles').select('role')
+      .then(({ data }) => {
+        if (data) {
+          const counts = data.reduce((acc, u) => { acc[u.role] = (acc[u.role] ?? 0) + 1; return acc }, {})
+          setStats(counts)
+        }
+      })
+      .finally(() => setLoading(false))
+    const saved = localStorage.getItem('term_summary')
+    if (saved) setTermSummary(JSON.parse(saved))
+  }, [])
+
+  async function generateTermSummary() {
+    setGeneratingSummary(true)
+    try {
+      const result = await api.post('/admin/term-summary', {})
+      setTermSummary(result)
+      localStorage.setItem('term_summary', JSON.stringify(result))
+      setSummaryModal(true)
+    } catch (e) {
+      alert('Failed to generate: ' + e.message)
+    } finally {
+      setGeneratingSummary(false)
+    }
+  }
+
   const firstName = profile?.full_name?.split(' ')[0] ?? 'Admin'
 
-  const CARDS = [
-    { to: 'users', icon: '👥', title: 'Users', desc: 'View all teachers, parents and students', color: 'bg-blue-50 border-blue-100 hover:border-blue-300', icon_bg: 'bg-blue-100' },
-    { to: 'classes', icon: '🏫', title: 'Classes', desc: 'View class and subject assignments', color: 'bg-violet-50 border-violet-100 hover:border-violet-300', icon_bg: 'bg-violet-100' },
-    { to: 'sentiment', icon: '📊', title: 'Sentiment Overview', desc: 'Monitor parent-teacher communication tone', color: 'bg-emerald-50 border-emerald-100 hover:border-emerald-300', icon_bg: 'bg-emerald-100' },
+  const STAT_CARDS = [
+    { label: 'Teachers', value: stats.teacher ?? 0, icon: '👨‍🏫', color: 'border-blue-100 bg-blue-50' },
+    { label: 'Students', value: stats.student ?? 0, icon: '👦', color: 'border-amber-100 bg-amber-50' },
+    { label: 'Parents', value: stats.parent ?? 0, icon: '👨‍👩‍👦', color: 'border-emerald-100 bg-emerald-50' },
+    { label: 'Total Users', value: Object.values(stats).reduce((a,b) => a+b, 0), icon: '👥', color: 'border-violet-100 bg-violet-50' },
+  ]
+
+  const SECTIONS = [
+    { to: 'users', icon: '👥', label: 'User Management', desc: 'View and manage all teachers, parents, students', color: 'hover:border-blue-300' },
+    { to: 'classes', icon: '🏫', label: 'Classes', desc: 'Class configuration and section management', color: 'hover:border-violet-300' },
+    { to: 'sentiment', icon: '📊', label: 'Sentiment Analytics', desc: 'Communication tone across the school', color: 'hover:border-emerald-300' },
   ]
 
   return (
-    <main className="max-w-4xl mx-auto px-4 py-10">
-      <div className="mb-10">
-        <p className="text-sm text-gray-400 mb-1">Admin Panel</p>
-        <h1 className="text-3xl font-bold text-gray-900">Welcome, {firstName} 👋</h1>
-        <p className="text-gray-500 text-sm mt-1">Manage your school, monitor communication and track engagement.</p>
+    <div className="px-6 py-8 max-w-5xl mx-auto">
+      {/* Header */}
+      <div className="mb-8">
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">School Administration</p>
+        <h1 className="text-3xl font-bold text-gray-900">Welcome, {firstName}</h1>
+        <p className="text-sm text-gray-500 mt-1">{new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
       </div>
+
+      {/* School-wide stat cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+        {STAT_CARDS.map(s => (
+          <div key={s.label} className={`rounded-xl border p-5 ${s.color}`}>
+            {loading ? (
+              <div className="space-y-2"><div className="skeleton h-8 w-12" /><div className="skeleton h-3 w-20" /></div>
+            ) : (
+              <>
+                <span className="text-2xl">{s.icon}</span>
+                <p className="text-3xl font-bold text-gray-900 mt-1">{s.value}</p>
+                <p className="text-xs text-gray-500 mt-0.5">{s.label}</p>
+              </>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* AI Term Summary */}
+      <div className="bg-gradient-to-r from-violet-50 to-indigo-50 border border-violet-100 rounded-xl p-5 mb-8 flex items-center justify-between gap-4">
+        <div>
+          <p className="font-semibold text-gray-800 text-sm">✦ AI Term Summary Report</p>
+          <p className="text-xs text-gray-500 mt-0.5">Generate a school-wide performance summary for the board. Max 300 words.</p>
+          {termSummary && <p className="text-xs text-gray-400 mt-1">Last generated: {new Date(termSummary.generatedAt).toLocaleDateString('en-IN')}</p>}
+        </div>
+        <div className="flex gap-2 shrink-0">
+          {termSummary && (
+            <button onClick={() => setSummaryModal(true)} className="text-xs border border-violet-300 text-violet-700 px-3 py-2 rounded-lg hover:bg-violet-100 transition-colors">
+              View
+            </button>
+          )}
+          <button
+            onClick={generateTermSummary}
+            disabled={generatingSummary}
+            className="text-xs bg-violet-600 text-white px-4 py-2 rounded-lg hover:bg-violet-700 disabled:opacity-50 transition-colors font-medium"
+          >
+            {generatingSummary ? 'Generating…' : termSummary ? 'Regenerate' : 'Generate Report'}
+          </button>
+        </div>
+      </div>
+
+      {/* Term Summary Modal */}
+      {summaryModal && termSummary && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setSummaryModal(false)}>
+          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-gray-900">Term Performance Summary</h3>
+              <button onClick={() => setSummaryModal(false)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+            </div>
+            <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{termSummary.summary}</p>
+            <div className="flex gap-2 mt-5">
+              <button
+                onClick={() => navigator.clipboard.writeText(termSummary.summary).then(() => alert('Copied!'))}
+                className="text-xs bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                📋 Copy
+              </button>
+              <button onClick={() => setSummaryModal(false)} className="text-xs border border-gray-200 text-gray-500 px-3 py-2 rounded-lg hover:bg-gray-50">Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sections */}
+      <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Manage</h2>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {CARDS.map((c) => (
-          <Link key={c.to} to={c.to}
-            className={`group flex flex-col gap-3 rounded-2xl border p-5 transition-all hover:shadow-md ${c.color}`}>
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl ${c.icon_bg} group-hover:scale-110 transition-transform`}>
-              {c.icon}
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-0.5">{c.title}</h3>
-              <p className="text-xs text-gray-500 leading-snug">{c.desc}</p>
-            </div>
+        {SECTIONS.map(s => (
+          <Link key={s.to} to={s.to}
+            className={`bg-white rounded-xl border border-gray-100 p-5 hover:shadow-sm transition-all ${s.color}`}>
+            <span className="text-2xl">{s.icon}</span>
+            <h3 className="font-semibold text-gray-900 mt-3 mb-1">{s.label}</h3>
+            <p className="text-xs text-gray-400">{s.desc}</p>
           </Link>
         ))}
       </div>
-    </main>
+    </div>
   )
 }
 
@@ -88,48 +186,72 @@ function AdminUsers() {
       .finally(() => setLoading(false))
   }, [])
 
-  const filtered = filter === 'all' ? users : users.filter((u) => u.role === filter)
+  const filtered = filter === 'all' ? users : users.filter(u => u.role === filter)
   const counts = users.reduce((acc, u) => { acc[u.role] = (acc[u.role] ?? 0) + 1; return acc }, {})
 
-  return (
-    <main className="max-w-4xl mx-auto px-4 py-8">
-      <PageHeader title="All Users" subtitle={`${users.length} total accounts`} />
+  function exportCSV() {
+    const rows = [['Name', 'Role', 'Joined'], ...filtered.map(u => [u.full_name, u.role, new Date(u.created_at).toLocaleDateString('en-IN')])]
+    const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n')
+    const a = document.createElement('a')
+    a.href = 'data:text/csv,' + encodeURIComponent(csv)
+    a.download = 'edubridge_users.csv'
+    a.click()
+  }
 
-      {/* Summary chips */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        {['all', 'admin', 'teacher', 'parent', 'student'].map((r) => (
-          <button key={r} onClick={() => setFilter(r)}
-            className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${filter === r ? 'bg-primary-600 text-white' : 'bg-white border border-gray-200 text-gray-500 hover:border-primary-300'}`}>
-            {r.charAt(0).toUpperCase() + r.slice(1)} {r !== 'all' ? `(${counts[r] ?? 0})` : `(${users.length})`}
-          </button>
-        ))}
+  return (
+    <div className="px-6 py-8 max-w-5xl mx-auto">
+      <div className="mb-2">
+        <Link to="/admin" className="text-xs text-gray-400 hover:text-primary-500 transition-colors">← Dashboard</Link>
+      </div>
+      <PageTitle title="Users" subtitle={`${users.length} total accounts across all roles`} />
+
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-wrap gap-2">
+          {['all', 'admin', 'teacher', 'parent', 'student'].map(r => (
+            <button key={r} onClick={() => setFilter(r)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                filter === r ? 'bg-slate-900 text-white' : 'bg-white border border-gray-200 text-gray-500 hover:border-slate-400'
+              }`}>
+              {r.charAt(0).toUpperCase() + r.slice(1)} ({r === 'all' ? users.length : counts[r] ?? 0})
+            </button>
+          ))}
+        </div>
+        <button onClick={exportCSV} className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 border border-gray-200 bg-white px-3 py-1.5 rounded-lg hover:border-slate-400 hover:text-slate-700 transition-colors">
+          ↓ Export CSV
+        </button>
       </div>
 
-      {loading ? <Spinner /> : (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      {loading ? <Spinner /> : filtered.length === 0 ? (
+        <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
+          <div className="text-4xl mb-2">👥</div>
+          <p className="font-semibold text-gray-600">No users found</p>
+          <p className="text-xs text-gray-400 mt-1">No {filter !== 'all' ? filter : ''} accounts yet</p>
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Name</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Role</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide hidden sm:table-cell">Joined</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase">Name</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase">Role</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase hidden sm:table-cell">Joined</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {filtered.map((u) => (
-                <tr key={u.id} className="hover:bg-gray-50 transition-colors">
+              {filtered.map((u, i) => (
+                <tr key={u.id} className={`hover:bg-gray-50 transition-colors ${i % 2 === 1 ? 'bg-gray-50/40' : ''}`}>
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-full bg-primary-100 flex items-center justify-center shrink-0">
-                        <span className="text-primary-700 text-xs font-bold">
-                          {u.full_name?.split(' ').map((n) => n[0]).join('').slice(0, 2)}
+                      <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+                        <span className="text-slate-600 text-xs font-bold">
+                          {u.full_name?.split(' ').map(n => n[0]).join('').slice(0,2)}
                         </span>
                       </div>
                       <span className="font-medium text-gray-800">{u.full_name}</span>
                     </div>
                   </td>
                   <td className="px-5 py-3">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${ROLE_COLOR[u.role] ?? 'bg-gray-100 text-gray-600'}`}>
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${ROLE_COLOR[u.role] ?? 'bg-gray-100 text-gray-600'}`}>
                       {u.role}
                     </span>
                   </td>
@@ -142,7 +264,7 @@ function AdminUsers() {
           </table>
         </div>
       )}
-    </main>
+    </div>
   )
 }
 
@@ -157,12 +279,19 @@ function AdminClasses() {
   }, [])
 
   return (
-    <main className="max-w-4xl mx-auto px-4 py-8">
-      <PageHeader title="Classes" subtitle={`${classes.length} classes configured`} />
-      {loading ? <Spinner /> : (
+    <div className="px-6 py-8 max-w-5xl mx-auto">
+      <div className="mb-2"><Link to="/admin" className="text-xs text-gray-400 hover:text-primary-500">← Dashboard</Link></div>
+      <PageTitle title="Classes" subtitle={`${classes.length} classes configured`} />
+      {loading ? <Spinner /> : classes.length === 0 ? (
+        <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
+          <div className="text-4xl mb-2">🏫</div>
+          <p className="font-semibold text-gray-600">No classes yet</p>
+          <p className="text-xs text-gray-400 mt-1">Contact your system administrator to add classes</p>
+        </div>
+      ) : (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {classes.map((c) => (
-            <div key={c.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          {classes.map(c => (
+            <div key={c.id} className="bg-white rounded-xl border border-gray-100 p-5 hover:border-violet-200 transition-colors">
               <div className="w-10 h-10 bg-violet-100 rounded-xl flex items-center justify-center text-lg mb-3">🏫</div>
               <h3 className="font-bold text-gray-900">{c.name}</h3>
               <p className="text-xs text-gray-400 mt-1">Grade {c.grade} · Section {c.section}</p>
@@ -170,7 +299,7 @@ function AdminClasses() {
           ))}
         </div>
       )}
-    </main>
+    </div>
   )
 }
 
@@ -181,8 +310,8 @@ function AdminSentiment() {
 
   useEffect(() => {
     api.get('/admin/sentiment')
-      .then((data) => setNotes(data ?? []))
-      .catch((e) => setError(e.message))
+      .then(data => setNotes(data ?? []))
+      .catch(e => setError(e.message))
       .finally(() => setLoading(false))
   }, [])
 
@@ -196,18 +325,18 @@ function AdminSentiment() {
   ]
 
   return (
-    <main className="max-w-4xl mx-auto px-4 py-8">
-      <PageHeader title="Sentiment Overview" subtitle="Tone analysis across all parent-teacher messages" />
+    <div className="px-6 py-8 max-w-5xl mx-auto">
+      <div className="mb-2"><Link to="/admin" className="text-xs text-gray-400 hover:text-primary-500">← Dashboard</Link></div>
+      <PageTitle title="Sentiment Analytics" subtitle="AI-classified tone analysis across all parent-teacher messages" />
       {error && <div className="bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl px-4 py-3 mb-5">{error}</div>}
       {loading ? <Spinner /> : (
         <>
-          {/* Stat cards */}
           <div className="grid grid-cols-3 gap-4 mb-6">
-            {SENTIMENTS.map((s) => {
+            {SENTIMENTS.map(s => {
               const count = counts[s.key] ?? 0
               const pct = total ? Math.round((count / total) * 100) : 0
               return (
-                <div key={s.key} className={`rounded-2xl border p-5 text-center ${s.bg}`}>
+                <div key={s.key} className={`rounded-xl border p-5 text-center ${s.bg}`}>
                   <div className="text-2xl mb-1">{s.emoji}</div>
                   <p className={`text-3xl font-extrabold ${s.color}`}>{count}</p>
                   <p className="text-xs text-gray-500 mt-0.5 capitalize">{s.label}</p>
@@ -220,18 +349,21 @@ function AdminSentiment() {
             })}
           </div>
 
-          {/* Message list */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
               <h3 className="font-semibold text-gray-800">All Messages</h3>
               <span className="text-xs text-gray-400">{total} total</span>
             </div>
             {notes.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-10">No sentiment data yet.</p>
+              <div className="text-center py-12">
+                <div className="text-4xl mb-2">💬</div>
+                <p className="font-semibold text-gray-500">No messages yet</p>
+                <p className="text-xs text-gray-400 mt-1">Sentiment data will appear once teachers and parents start messaging</p>
+              </div>
             ) : (
               <div className="divide-y divide-gray-50">
                 {notes.map((n, i) => (
-                  <div key={i} className="flex items-start gap-3 px-5 py-3.5 hover:bg-gray-50 transition-colors">
+                  <div key={i} className={`flex items-start gap-3 px-5 py-3.5 hover:bg-gray-50 transition-colors ${i % 2 === 1 ? 'bg-gray-50/40' : ''}`}>
                     <span className={`shrink-0 mt-0.5 px-2 py-0.5 rounded-full text-xs font-semibold ${
                       n.sentiment === 'positive' ? 'bg-emerald-100 text-emerald-700' :
                       n.sentiment === 'negative' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'
@@ -247,6 +379,6 @@ function AdminSentiment() {
           </div>
         </>
       )}
-    </main>
+    </div>
   )
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import Navbar from '../../components/layout/Navbar.jsx'
+import Sidebar from '../../components/layout/Sidebar.jsx'
 import { api } from '../../lib/api.js'
 
 export default function ParentProgress() {
@@ -49,12 +49,23 @@ export default function ParentProgress() {
     ? Math.round(marks.reduce((acc, m) => acc + (m.max_score > 0 ? (m.score / m.max_score) * 100 : 0), 0) / marks.length)
     : null
 
+  // Build subject averages for study suggestions
+  const subjectMap = {}
+  marks.forEach(m => {
+    const name = m.subjects?.name ?? 'Unknown'
+    if (!subjectMap[name]) subjectMap[name] = { total: 0, count: 0, score: m.score, max: m.max_score }
+    if (m.max_score > 0) { subjectMap[name].total += (m.score / m.max_score) * 100; subjectMap[name].count++ }
+    subjectMap[name].score = m.score; subjectMap[name].max = m.max_score
+  })
+  const weakSubjects = Object.entries(subjectMap)
+    .map(([name, d]) => ({ name, avg: Math.round(d.total / d.count), score: d.score, max: d.max }))
+    .filter(s => s.avg < 65)
+
   if (loading) return <Spinner />
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      <main className="max-w-3xl mx-auto px-4 py-8">
+    <Sidebar>
+      <div className="px-6 py-8 max-w-3xl mx-auto">
         <Link to="/parent" className="text-sm text-primary-600 hover:underline mb-4 inline-block">← Back</Link>
         <h2 className="text-2xl font-bold text-gray-900 mb-1">Progress Report</h2>
         {child && <p className="text-gray-500 text-sm mb-6">{child.full_name} · {child.classes?.name}</p>}
@@ -102,6 +113,23 @@ export default function ParentProgress() {
           </div>
         )}
 
+        {weakSubjects.length > 0 && (
+          <div className="bg-amber-50 border border-amber-100 rounded-xl p-5 mb-6">
+            <h3 className="font-semibold text-amber-800 mb-3 text-sm">📚 Subjects Needing Support</h3>
+            <div className="space-y-4">
+              {weakSubjects.map(s => (
+                <div key={s.name} className="bg-white rounded-lg border border-amber-100 p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-gray-800 text-sm">{s.name}</span>
+                    <span className="text-xs font-semibold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">{s.avg}%</span>
+                  </div>
+                  <StudySuggestions subject={s.name} score={s.score} maxScore={s.max} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {marks.length > 0 && (
           <div className="bg-white rounded-xl border border-gray-200 p-5">
             <h3 className="font-semibold text-gray-800 mb-3">Marks Detail</h3>
@@ -130,7 +158,47 @@ export default function ParentProgress() {
             </div>
           </div>
         )}
-      </main>
+      </div>
+    </Sidebar>
+  )
+}
+
+function StudySuggestions({ subject, score, maxScore }) {
+  const [suggestions, setSuggestions] = useState(null)
+  const [open, setOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
+
+  async function load() {
+    if (suggestions) { setOpen(v => !v); return }
+    setOpen(true); setLoading(true)
+    try {
+      const { suggestions: s } = await api.get(
+        `/parent/study-suggestions?subject=${encodeURIComponent(subject)}&score=${score}&max_score=${maxScore}`
+      )
+      setSuggestions(s)
+    } catch { setSuggestions(['Review your child\'s notes together each evening.', `Look for free ${subject} practice worksheets online.`, 'Ask their teacher for recommended resources.']) }
+    finally { setLoading(false) }
+  }
+
+  return (
+    <div className="mt-3 border-t border-gray-100 pt-3">
+      <button onClick={load} className="text-xs text-primary-600 font-medium hover:underline flex items-center gap-1">
+        {open ? '▲' : '▼'} How you can help at home
+      </button>
+      {open && (
+        <div className="mt-2">
+          {loading ? <p className="text-xs text-gray-400">Getting suggestions…</p> : suggestions && (
+            <ol className="space-y-1.5">
+              {suggestions.map((s, i) => (
+                <li key={i} className="text-xs text-gray-600 flex gap-2">
+                  <span className="text-primary-500 font-bold shrink-0">{i + 1}.</span>
+                  <span>{s}</span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+      )}
     </div>
   )
 }
